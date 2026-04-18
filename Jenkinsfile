@@ -76,6 +76,7 @@ pipeline {
                 sh 'docker run -itd --name insure-me -p 8089:8081 abhipraydh96/insure-b31'
             }
         }
+        
 
     }
 }
