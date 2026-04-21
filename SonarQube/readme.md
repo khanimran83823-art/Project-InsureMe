@@ -2,7 +2,7 @@
 
 **Jenkins**
 ````
-sudo apt update
+sudo apt update -y
 sudo apt install fontconfig openjdk-21-jre  -y
 
 sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
