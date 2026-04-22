@@ -172,48 +172,76 @@ pipeline {
 ````
 pipeline {
     agent any 
-
-    tools {
-        maven 'maven-3'
+    tools{
+        maven 'maven'
     }
-
-   environment {
-     S3_BUCKET = "project-insure-me-build-artifacts-store"
-     REGION = "ap-southeast-1"
+    environment {
+     SCANNER_HOME = tool 'sonar-scanner'
+     S3_BUCKET = "project-insure-me-build-artifacts-store-onb36"
+     REGION = "ap-south-1"
      warFile = "target/Insurance-0.0.1-SNAPSHOT.jar"
-   }
+     }
+    stages {
+        stage('code-pull'){
+            steps{
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/abhipraydhoble/Project-InsureMe.git']])
+            }
+        }
+        stage('code-build'){
+            steps{
+                sh 'mvn clean package'
+            }
+        }
+        
+        stage("code-test") {
+            steps {
+                withSonarQubeEnv('sonar-server') {
+                    sh '''
+                        $SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectKey=InsureMe \
+                        -Dsonar.projectName=InsureMe \
+                        -Dsonar.sources=src \
+                        -Dsonar.java.binaries=target/classes
+                    '''
+                }
+            }
+        }
 
-
-stages{
-    stage('code-pull'){
-        steps{
-            checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/abhipraydhoble/Project-InsureMe.git']])
+        stage("code-test-quality gate") {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                }
+            }
+        }
+        stage('code-push'){
+            steps{
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                   sh 'aws s3 cp ${warFile} s3://${S3_BUCKET}/Artifacts/ --region ${REGION}'
+                 }
+            }
+        }
+       stage('docker-image'){
+            steps{
+                sh 'docker build -t abhipraydh96/insureb36 .'
+                
+            }
+        }
+        
+        stage('image-push'){
+            steps {
+       	       withCredentials([usernamePassword(credentialsId: 'docker-cred', passwordVariable: 'dockerHubPassword', usernameVariable: 'dockerHubUser')]) {
+            	sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPassword}"
+                sh 'docker push abhipraydh96/insureb36'
+               }
+            }
+        } 
+        
+        stage('code-deploy'){
+            steps{
+                sh 'docker run -itd --name insure-me -p 8089:8081 abhipraydh96/insureb36'
+            }
         }
     }
-
-    stage('code-build'){
-        steps{
-            sh 'mvn clean package'
-        }
-    }
-    
-    stage('push-to-s3'){
-        steps{
-            withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws_cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-               sh 'aws s3 cp ${warFile} s3://${S3_BUCKET}/Backup/ --region ${REGION}'
-             }
-        }
-    }
-     stage('docker-image'){
-        steps{
-            sh 'docker build -t insure-me .'
-        }
-    }
-    stage('code-deploy'){
-        steps{
-            sh 'docker run -itd --name insure-me -p 8089:8081 insure-me '
-        }
-    }
- }
 }
 ````
