@@ -223,7 +223,7 @@ pipeline {
         }
        stage('docker-image'){
             steps{
-                sh 'docker build -t abhipraydh96/insureb36 .'
+                sh 'docker build -t khanimran83823/insure36 .'
                 
             }
         }
@@ -232,14 +232,14 @@ pipeline {
             steps {
        	       withCredentials([usernamePassword(credentialsId: 'docker-cred', passwordVariable: 'dockerHubPassword', usernameVariable: 'dockerHubUser')]) {
             	sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPassword}"
-                sh 'docker push abhipraydh96/insureb36'
+                sh 'docker push khanimran83823/insure36'
                }
             }
         } 
         
         stage('code-deploy'){
             steps{
-                sh 'docker run -itd --name insure-me -p 8089:8081 abhipraydh96/insureb36'
+                sh 'docker run -itd --name insure-me -p 8089:8081 khanimran83823/insure36'
             }
         }
     }
