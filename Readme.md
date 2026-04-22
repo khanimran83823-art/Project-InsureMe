@@ -184,7 +184,7 @@ pipeline {
     stages {
         stage('code-pull'){
             steps{
-                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/abhipraydhoble/Project-InsureMe.git']])
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/khanimran83823-art/Project-InsureMe.git']])
             }
         }
         stage('code-build'){
